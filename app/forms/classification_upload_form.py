@@ -2,6 +2,9 @@
 from fastapi import Request, UploadFile
 from typing import List
 from starlette import datastructures
+from app.config import Configuration
+import io
+from PIL import Image
 
 class ClassificationUploadForm:
     """Processes and validates image uploads for classification"""
@@ -36,5 +39,14 @@ class ClassificationUploadForm:
             self.errors.append("Upload a valid image. Is required")
         elif len(self.image_bytes) == 0:
             self.errors.append("Uploaded image is empty")
+        elif self.image.content_type not in Configuration.img_allowed:
+            allowed_formats = ", ".join(Configuration.img_allowed)
+            self.errors.append(f"Invalid format. Allowed formats are: {allowed_formats}")
+        else:
+            try:
+                img = Image.open(io.BytesIO(self.image_bytes)) #check anti crash
+                img.verify()
+            except Exception:
+                self.errors.append("The file is not a valid image or is corrupt.")
 
         return not self.errors
